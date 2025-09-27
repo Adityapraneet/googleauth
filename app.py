@@ -4,10 +4,14 @@ from flask import Flask, redirect, url_for, session, request, render_template
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 # This secret key is needed for session management
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # --- Google Sheets Configuration ---
 # You need to share your Google Sheet with the client_email in your service_account.json
@@ -16,7 +20,7 @@ GSHEET_SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 # Path to your service account key file
 SERVICE_ACCOUNT_FILE = 'service_account.json'
 # The ID of your spreadsheet
-SPREADSHEET_ID = '1zdZqSqREyTcMpaHytd49ISS43mBOMHVmBR0JlJEXRvM'
+SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID', '1zdZqSqREyTcMpaHytd49ISS43mBOMHVmBR0JlJEXRvM')
 
 # Authenticate with Google Sheets using the service account
 try:
@@ -35,7 +39,7 @@ CLIENT_SECRETS_FILE = "credentials.json"
 OAUTH_SCOPE = ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"]
 # The URL your users will be sent back to after they log in.
 # It must match what you've set in the Google Cloud Console.
-REDIRECT_URI = "http://127.0.0.1:5000/callback"
+REDIRECT_URI = os.environ.get('REDIRECT_URI', "http://127.0.0.1:5000/callback")
 
 # --- Flask Routes ---
 
@@ -136,5 +140,10 @@ def logout():
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-    app.run(debug=True)
+    # Only allow insecure transport in development
+    if os.environ.get('FLASK_ENV') != 'production':
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    app.run(host='0.0.0.0', port=port, debug=debug)
